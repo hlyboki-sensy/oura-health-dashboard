@@ -227,6 +227,33 @@ body::after{content:""; position:fixed; top:-30vh; left:50%; width:120vw; height
 .coach-goal .gt{font-family:"Fraunces",serif; font-size:20px; line-height:1.35}
 .coach-empty{color:var(--bone-dim); font-size:15px; max-width:70ch; line-height:1.6}
 
+/* ЦИКЛ */
+.cyc-hero{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;border:1px solid var(--hair);border-radius:16px;padding:24px 28px;margin-bottom:20px;background:linear-gradient(180deg,rgba(255,210,14,.04),transparent)}
+@media(max-width:680px){.cyc-hero{grid-template-columns:1fr;gap:16px}}
+.cyc-day{text-align:center}
+.cyc-day .n{font-family:"Fraunces",serif;font-size:60px;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.cyc-day .l{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--bone-faint);margin-top:6px}
+.cyc-ph{font-family:"Fraunces",serif;font-style:italic;font-weight:300;font-size:clamp(22px,3vw,30px)}
+.cyc-ph .hl{color:var(--accent);font-style:normal}
+.cyc-sub{color:var(--bone-dim);margin-top:10px;font-size:14.5px;max-width:60ch}
+.cyc-chips{display:flex;gap:26px;flex-wrap:wrap;margin:2px 0 6px}
+.cyc-chips .a{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--bone-faint);text-transform:uppercase;letter-spacing:.08em}
+.cyc-chips .a b{display:block;font-family:"Fraunces",serif;font-size:22px;color:var(--bone);text-transform:none;margin-top:4px}
+.phgrid{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair);border-left:1px solid var(--hair);margin-top:6px}
+@media(max-width:760px){.phgrid{grid-template-columns:repeat(2,1fr)}}
+.phc{border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:14px 16px}
+.phc.cur{background:rgba(255,210,14,.07)}
+.phc .pl{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint)}
+.phc .pv{font-family:"Fraunces",serif;font-size:17px;margin-top:7px;font-variant-numeric:tabular-nums}
+.phc .pv2{font-size:13px;color:var(--bone-dim);margin-top:3px}
+.gcard{display:grid;grid-template-columns:30px 1fr;gap:14px;border:1px solid var(--hair);border-radius:12px;padding:18px 20px;margin-bottom:10px}
+.gcard.cur{border-color:var(--accent);background:linear-gradient(180deg,rgba(255,210,14,.05),transparent)}
+.gcard .gi{font-size:20px}
+.gcard .gt{font-family:"Fraunces",serif;font-size:18px}
+.gcard .gt small{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--bone-faint);margin-left:8px;letter-spacing:.06em;text-transform:uppercase}
+.gcard .gx{font-size:13.5px;color:var(--bone-dim);margin-top:7px}
+.gcard .gx b{color:var(--bone)}
+
 footer{margin-top:60px; padding-top:24px; border-top:1px solid var(--hair);
   font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--bone-faint); line-height:1.9}
 footer code{color:var(--accent); background:var(--ink2); padding:2px 7px; border-radius:4px}
@@ -252,6 +279,7 @@ footer .dis{margin-top:10px}
     <button class="tab active" data-v="overview">Огляд</button>
     <button class="tab" data-v="daily">Щоденно</button>
     <button class="tab" data-v="weekly">Потижнево</button>
+    <button class="tab" data-v="cycle">Цикл</button>
     <button class="tab" data-v="coach">План</button>
     <button class="tab" data-v="glossary">Словник</button>
     <div class="tabactions">
@@ -321,15 +349,21 @@ footer .dis{margin-top:10px}
     <div id="weekList"></div>
   </section>
 
+  <!-- ЦИКЛ -->
+  <section class="view" id="view-cycle">
+    <div class="sect"><span class="no">06</span><h2>Менструальний цикл</h2><span class="tail"></span></div>
+    <div id="cycleContent"></div>
+  </section>
+
   <!-- ПЛАН НА ТИЖДЕНЬ -->
   <section class="view" id="view-coach">
-    <div class="sect"><span class="no">06</span><h2>План на тиждень</h2><span class="tail"></span></div>
+    <div class="sect"><span class="no">07</span><h2>План на тиждень</h2><span class="tail"></span></div>
     <div id="coachContent"></div>
   </section>
 
   <!-- СЛОВНИК -->
   <section class="view" id="view-glossary">
-    <div class="sect"><span class="no">07</span><h2>Словник метрик</h2><span class="tail"></span></div>
+    <div class="sect"><span class="no">08</span><h2>Словник метрик</h2><span class="tail"></span></div>
     <p style="color:var(--bone-dim); max-width:74ch; margin-bottom:6px">Що насправді означає кожен показник Oura — простими словами.</p>
     <div id="glossary"></div>
     <div class="gnote">Детальні тлумачення складових кожного скору (глибокий сон, баланс HRV, регулярність тощо) — у вкладці «Щоденно» під кожним днем.</div>
@@ -345,7 +379,7 @@ const PILL = {good:"Добре", warn:"Варто", alert:"Увага"};
 const MON = ["січ","лют","бер","кві","тра","чер","лип","сер","вер","жов","лис","гру"];
 const MONF = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
 const WDF = {пн:"понеділок",вт:"вівторок",ср:"середа",чт:"четвер",пт:"пʼятниця",сб:"субота",нд:"неділя"};
-let B, dayIdx=0, SPK=false, PREP=false, neuralAudio=null, ttsVoice=null, ttsQueue=[], ttsI=0, ttsKeep=null;
+let B, dayIdx=0, SPK=false, PREP=false, neuralAudio=null, ttsVoice=null, ttsQueue=[], ttsI=0, ttsKeep=null, cycleChartDone=false;
 const sev = v => v==null?"warn":(v>=85?"good":(v>=70?"warn":"alert"));
 const fmtDay = iso => {const [y,m,d]=iso.split("-").map(Number); return `${d} ${MON[m-1]} ${y}`;};
 
@@ -395,6 +429,56 @@ function render(data){
   buildWeekly();
   buildGlossary();
   buildCoach();
+  buildCycle();
+}
+function buildCycle(){
+  const el=document.getElementById("cycleContent"); const C=B.cycle;
+  if(!C||!C.tracked){ el.innerHTML='<div class="coach-empty">Щоб тут зʼявилася аналітика циклу, познач початок місячних у застосунку Oura (тег «Період»). Після наступного оновлення дані підтягнуться сюди.</div>'; return; }
+  let h=`<div class="cyc-hero">
+    <div class="cyc-day"><div class="n">${C.cur_day}</div><div class="l">день циклу</div></div>
+    <div><div class="cyc-ph">Ти у <span class="hl">${({menstrual:"менструальній",follicular:"фолікулярній",ovulation:"овуляторній",luteal:"лютеїновій"})[C.phase]||C.phase_ua}</span> фазі.</div>
+      <div class="cyc-sub">Наступні місячні очікуються приблизно <b style="color:var(--bone)">${fmtDay(C.predicted_next)}</b>${C.days_to_next>=0?` (через ${C.days_to_next} дн)`:" (можливо, вже зовсім скоро)"}. Середній цикл — ${C.avg_len} днів.</div></div>
+  </div>`;
+  h+=`<div class="cyc-chips">`+
+     `<div class="a">Середній цикл<b>${C.avg_len} дн</b></div>`+
+     `<div class="a">Циклів у даних<b>${C.n_cycles}</b></div>`+
+     `<div class="a">Регулярність<b>${C.regular?"стабільна":"мінлива"}</b></div>`+
+     `<div class="a">Останні місячні<b>${fmtDay(C.last_start)}</b></div></div>`;
+  h+=`<div class="coach-h">Температура цього циклу</div>`;
+  h+=`<p style="color:var(--bone-faint);font-size:12.5px;margin-bottom:12px">Підвищення у другій половині — ознака лютеїнової фази; спад зазвичай перед наступними місячними.</p>`;
+  h+=`<div class="box"><canvas id="c_cycletemp"></canvas></div>`;
+  h+=`<div class="coach-h">Твої метрики по фазах</div>`;
+  const ord=[["follicular","Фолікулярна"],["ovulation","Овуляторна"],["luteal","Лютеїнова"],["menstrual","Менструальна"]];
+  h+=`<div class="phgrid">`+ord.map(([k,nm])=>{const s=C.phase_stats[k]||{}; const cur=k===C.phase?"cur":"";
+     const tmp=s.temp!=null?(s.temp>0?"+":"")+s.temp+"°C":"—";
+     return `<div class="phc ${cur}"><div class="pl">${nm}${k===C.phase?" · зараз":""}</div>
+       <div class="pv">HRV ${s.hrv??"—"} · пульс ${s.rhr??"—"}</div>
+       <div class="pv2">готовність ${s.readiness??"—"} · темп ${tmp}</div></div>`;}).join("")+`</div>`;
+  h+=`<div class="coach-h">Що відбувається у кожній фазі</div>`;
+  h+=C.guide.map(g=>`<div class="gcard ${g.key===C.phase?"cur":""}"><div class="gi">${g.icon}</div><div>
+     <div class="gt">${g.name}<small>${g.days}</small></div>
+     <div class="gx">${g.what}</div>
+     <div class="gx"><b>Метрики:</b> ${g.metrics}</div>
+     <div class="gx"><b>Поради:</b> ${g.advice}</div></div></div>`).join("");
+  el.innerHTML=h;
+}
+function renderCycleChart(){
+  if(cycleChartDone||!B.cycle||!B.cycle.tracked) return;
+  const C=B.cycle, acc="#FFD20E";
+  new Chart(c_cycletemp,{type:"line",data:{labels:C.temp_curve.map(p=>"д"+p.cd),
+    datasets:[{label:"Темп Δ°C",data:C.temp_curve.map(p=>p.t),borderColor:acc,backgroundColor:"rgba(255,210,14,.12)",
+      fill:true,tension:.4,pointRadius:0,borderWidth:2,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,color:"#6c6860"}},y:{grid:{color:"rgba(243,239,230,.07)"}}}}});
+  cycleChartDone=true;
+}
+function narrateCycle(){
+  const C=B.cycle; if(!C||!C.tracked) return ["Менструальний цикл ще не відстежується. Познач початок місячних у застосунку Oura."];
+  const p=[`Менструальний цикл. День ${C.cur_day}, ${C.phase_ua} фаза.`,
+    `Наступні місячні приблизно ${fmtSpeak(C.predicted_next)}. Середній цикл ${C.avg_len} днів.`];
+  const g=C.guide.find(x=>x.key===C.phase);
+  if(g){ p.push(g.what); p.push("Поради. "+g.advice); }
+  return p;
 }
 function uanb(s){ return String(s).replace(/(^|[\s(])([А-Яа-яІіЇїЄєҐґA-Za-z]{1,2})\s+/g,(m,p,w)=>p+w+" "); }
 function buildCoach(){
@@ -481,6 +565,7 @@ function narrateActive(){
   const v=(document.querySelector(".view.on")||{}).id||"";
   if(v.endsWith("daily")) return narrateDay(B.days[dayIdx]);
   if(v.endsWith("weekly")) return narrateWeekly();
+  if(v.endsWith("cycle")) return narrateCycle();
   if(v.endsWith("coach")) return narrateCoach();
   if(v.endsWith("glossary")) return narrateGlossary();
   return narrateOverview();
@@ -579,6 +664,7 @@ function setupTabs(){
     t.classList.add("active");
     document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
     document.getElementById("view-"+t.dataset.v).classList.add("on");
+    if(t.dataset.v==="cycle") renderCycleChart();
     window.scrollTo({top:0,behavior:"smooth"});
   });
 }

@@ -827,6 +827,103 @@ for i, key in enumerate(sorted(week_keys, reverse=True)):
         "insight": [{"sev": s, "text": nbsp(t)} for s, t in wins],
     })
 
+# ====================================================================
+#  МЕНСТРУАЛЬНИЙ ЦИКЛ (з тегів tag_generic_period + температури)
+# ====================================================================
+PHASE_UA = {"menstrual": "менструальна", "follicular": "фолікулярна",
+            "ovulation": "овуляторна", "luteal": "лютеїнова"}
+
+CYCLE_GUIDE = [
+    {"key": "menstrual", "name": "Менструальна", "days": "≈ день 1–5", "icon": "🩸",
+     "what": "Початок циклу. Естроген і прогестерон низькі, енергія часто знижена, температура тіла падає до базової.",
+     "metrics": "Пульс спокою й температура поступово найнижчі; HRV відновлюється після передменструального спаду.",
+     "advice": "Дозволь собі легші 1–2 дні; ніжний рух — ходьба, йога, розтяжка. Більше заліза в їжі, тепло, відпочинок. Нижча готовність зараз — норма, не привід себе картати."},
+    {"key": "follicular", "name": "Фолікулярна", "days": "≈ день 6 — овуляція", "icon": "🌱",
+     "what": "Естроген зростає — енергія, настрій, сила й мотивація на підйомі. Часто найкраще самопочуття циклу.",
+     "metrics": "HRV і готовність зазвичай найвищі; температура низька й стабільна.",
+     "advice": "Твоє вікно для інтенсивних тренувань, складних задач і нових починань — організм найкраще переносить навантаження й стрес."},
+    {"key": "ovulation", "name": "Овуляторна", "days": "≈ середина, 2–3 дні", "icon": "✨",
+     "what": "Пік естрогену, потім стрибок температури вгору (~+0,3°C) — головний маркер овуляції. Енергія ще висока.",
+     "metrics": "Температура різко зростає й лишається підвищеною до кінця циклу; зв'язки трохи більш розслаблені.",
+     "advice": "Можна тримати навантаження, але слідкуй за технікою (трохи вищий ризик травм зв'язок). Гідратація."},
+    {"key": "luteal", "name": "Лютеїнова", "days": "≈ після овуляції — до періоду", "icon": "🌙",
+     "what": "Прогестерон високий, температура підвищена (+0,2…+0,4°C), пульс спокою вищий, HRV нижча. Це НОРМА, а не хвороба.",
+     "metrics": "Вищий пульс спокою, нижча HRV, сон може гіршати; наприкінці фази — ПМС (дратівливість, втома, тяга до їжі).",
+     "advice": "Пріоритет — відновлення. У другій половині фази знижуй інтенсивність, додавай сон, менше кофеїну й алкоголю. «Гірші» цифри зараз — це гормони, не втрата форми."},
+]
+
+
+def compute_cycle():
+    tags = load("enhanced_tag")
+    pdays = sorted({r["start_day"] for r in tags if r.get("tag_type_code") == "tag_generic_period"})
+    if not pdays:
+        return {"tracked": False}
+    pdates = [parse_day(x) for x in pdays]
+    # кластеризація: теги в межах 10 днів = один період
+    starts = []
+    for d in pdates:
+        if not starts or (d - starts[-1]).days > 10:
+            starts.append(d)
+    lengths = [(starts[i + 1] - starts[i]).days for i in range(len(starts) - 1)]
+    avg = round(sum(lengths) / len(lengths)) if lengths else 28
+    ref = all_days[-1]
+    last = starts[-1]
+    cur_day = (ref - last).days + 1
+    predicted = last + timedelta(days=avg)
+    days_to_next = (predicted - ref).days
+    ov = max(12, avg - 14)  # день овуляції ≈ довжина − 14
+
+    def phase_of(day):
+        if day <= 5:
+            return "menstrual"
+        if day < ov - 1:
+            return "follicular"
+        if day <= ov + 1:
+            return "ovulation"
+        return "luteal"
+
+    phase = phase_of(cur_day) if 1 <= cur_day <= avg + 12 else "—"
+
+    # персональні середні по фазах
+    acc = {k: {"hrv": [], "rhr": [], "temp": [], "readiness": [], "sleep": []} for k in PHASE_UA}
+    for d in all_days:
+        prev = [s for s in starts if s <= d]
+        if not prev:
+            continue
+        cd = (d - prev[-1]).days + 1
+        if cd > avg + 12:
+            continue
+        ph = phase_of(cd)
+        acc[ph]["hrv"].append(n_hrv.get(d))
+        acc[ph]["rhr"].append(n_rhr.get(d))
+        acc[ph]["temp"].append(temp_dev.get(d))
+        acc[ph]["readiness"].append(ready_score.get(d))
+        acc[ph]["sleep"].append(sleep_score.get(d))
+    phase_stats = {k: {m: (round(mean(v), 1) if mean(v) is not None else None)
+                       for m, v in acc[k].items()} for k in PHASE_UA}
+
+    # температурна крива поточного циклу
+    temp_curve = []
+    for d in all_days:
+        if d >= last:
+            temp_curve.append({"cd": (d - last).days + 1, "t": temp_dev.get(d)})
+
+    return {
+        "tracked": True, "avg_len": avg, "cur_day": cur_day,
+        "phase": phase, "phase_ua": PHASE_UA.get(phase, "—"),
+        "last_start": iso(last), "predicted_next": iso(predicted), "days_to_next": days_to_next,
+        "n_cycles": len(lengths), "lengths": lengths,
+        "regular": (max(lengths) - min(lengths) <= 7) if lengths else None,
+        "recent_starts": [iso(x) for x in starts[-6:]],
+        "phase_stats": phase_stats, "temp_curve": temp_curve,
+        "guide": [{"key": g["key"], "name": nbsp(g["name"]), "days": g["days"], "icon": g["icon"],
+                   "what": nbsp(g["what"]), "metrics": nbsp(g["metrics"]), "advice": nbsp(g["advice"])}
+                  for g in CYCLE_GUIDE],
+    }
+
+
+cycle = compute_cycle()
+
 bundle = {
     "meta": {
         "date_from": date_from, "date_to": date_to, "days": len(all_days),
@@ -839,6 +936,7 @@ bundle = {
     "series": payload,
     "days": days_detail,
     "weeks": weeks_detail,
+    "cycle": cycle,
     "glossary": {"contrib": CONTRIB, "metrics": [{"name": nbsp(n), "desc": nbsp(d)} for n, d in METRICS]},
 }
 with open(os.path.join(HERE, "dashboard_data.json"), "w", encoding="utf-8") as f:
