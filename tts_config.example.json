@@ -1,0 +1,15 @@
+{
+  "_інструкція": "Скопіюй цей файл у tts_config.json і встав свій ключ. Лиши лише ОДИН блок (azure АБО openai), зайве прибери.",
+
+  "provider": "azure",
+  "azure_key": "ВСТАВ_СВІЙ_AZURE_КЛЮЧ",
+  "azure_region": "westeurope",
+  "azure_voice": "uk-UA-PolinaNeural",
+  "rate": "+0%",
+
+  "_або_openai": "щоб використати OpenAI замість Azure: постав provider=openai і заповни нижче",
+  "openai_key": "ВСТАВ_СВІЙ_OPENAI_КЛЮЧ",
+  "openai_voice": "nova",
+  "openai_model": "gpt-4o-mini-tts",
+  "openai_instructions": "Читай природно, спокійним теплим тоном, українською."
+}

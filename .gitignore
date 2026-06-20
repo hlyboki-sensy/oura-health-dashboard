@@ -1,0 +1,19 @@
+# ── Секрети й особисті дані — НІКОЛИ не комітити ──
+config.json
+tokens.json
+
+# ── Твої дані здоров'я та все згенероване ──
+data/
+dashboard.html
+dashboard_data.json
+dashboard_data.js
+next_week_plan.js
+next_week_plan.json
+
+# ── Логи й тимчасове ──
+coach.log
+*.log
+*.mp3
+__pycache__/
+*.pyc
+.DS_Store

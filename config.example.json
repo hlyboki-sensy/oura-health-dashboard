@@ -1,0 +1,5 @@
+{
+  "client_id": "YOUR_OURA_CLIENT_ID",
+  "client_secret": "YOUR_OURA_CLIENT_SECRET",
+  "redirect_uri": "http://localhost:8765/callback"
+}

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тіло як текст · Oura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --ink:#0b0b0c; --ink2:#121214; --raise:#16161a;
+  --bone:#f3efe6; --bone-dim:#a39e93; --bone-faint:#6c6860;
+  --hair:rgba(243,239,230,.10); --hair2:rgba(243,239,230,.06);
+  --accent:#FFD20E;
+  --good:#9bc08a; --warn:#e3a849; --alert:#df7a70;
+  --blue:#7aa7d8; --violet:#b39ddb;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink); color:var(--bone);
+  font-family:"Instrument Sans",sans-serif; font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; overflow-x:hidden}
+body::before{content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body::after{content:""; position:fixed; top:-30vh; left:50%; width:120vw; height:90vh;
+  transform:translateX(-50%); pointer-events:none; z-index:0;
+  background:radial-gradient(ellipse at center,rgba(255,210,14,.07),transparent 60%)}
+.wrap{position:relative; z-index:1; max-width:1120px; margin:0 auto; padding:54px 32px 120px}
+.kicker{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.28em;
+  text-transform:uppercase; color:var(--bone-dim); display:flex; gap:10px; align-items:center}
+.kicker .bar{width:30px; height:1px; background:var(--accent)}
+.masthead{margin:18px 0 6px}
+.masthead h1{font-family:"Fraunces",serif; font-weight:300; font-size:clamp(40px,7vw,86px);
+  line-height:.98; letter-spacing:-.02em}
+.masthead h1 em{font-style:italic; font-weight:400; color:var(--accent)}
+.meta{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--bone-faint);
+  letter-spacing:.02em; margin-top:18px; display:flex; flex-wrap:wrap; gap:6px 18px}
+.meta b{color:var(--bone-dim); font-weight:500}
+
+/* TABS */
+.tabs{position:sticky; top:0; z-index:4; display:flex; gap:4px; margin:30px 0 0;
+  padding:14px 0; background:linear-gradient(180deg,var(--ink) 70%,transparent);
+  border-bottom:1px solid var(--hair)}
+.tab{font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--bone-faint); background:none; border:1px solid transparent;
+  padding:9px 16px; border-radius:99px; cursor:pointer; transition:.2s}
+.tab:hover{color:var(--bone-dim)}
+.tab.active{color:var(--ink); background:var(--accent); font-weight:500}
+.tabactions{margin-left:auto; display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.refresh{font-family:"JetBrains Mono",monospace; font-size:12px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--bone); background:var(--ink2); border:1px solid var(--hair);
+  padding:9px 16px; border-radius:99px; cursor:pointer; transition:.2s; white-space:nowrap}
+.refresh:hover{color:var(--ink); background:var(--accent); border-color:var(--accent)}
+.refresh.speaking{color:var(--ink); background:var(--accent); border-color:var(--accent)}
+#toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+  max-width:92vw; background:var(--ink2); border:1px solid var(--hair); color:var(--bone-dim);
+  font-family:"JetBrains Mono",monospace; font-size:12px; padding:12px 18px; border-radius:10px;
+  opacity:0; pointer-events:none; transition:.4s; z-index:11; line-height:1.6}
+#toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+.view{display:none; animation:rise .6s cubic-bezier(.2,.7,.2,1)} .view.on{display:block}
+#refreshing{position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center;
+  background:rgba(11,11,12,.82); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px)}
+#refreshing.on{display:flex}
+.rcard{text-align:center; max-width:80vw}
+.rcard .spin{width:40px; height:40px; margin:0 auto 20px; border:2px solid var(--hair);
+  border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rcard .rmsg{font-family:"Fraunces",serif; font-size:22px; line-height:1.3}
+.rcard .rsub{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--bone-faint);
+  margin-top:8px; letter-spacing:.1em; text-transform:uppercase}
+
+.rule{height:1px; background:var(--hair); margin:46px 0}
+.sect{display:flex; align-items:baseline; gap:16px; margin:34px 0 26px}
+.sect .no{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--accent); letter-spacing:.1em}
+.sect h2{font-family:"Fraunces",serif; font-weight:400; font-size:24px; letter-spacing:-.01em}
+.sect .tail{flex:1; height:1px; background:var(--hair2); align-self:center}
+
+/* HERO */
+.hero{display:grid; grid-template-columns:auto 1fr; gap:48px; align-items:center}
+@media(max-width:720px){.hero{grid-template-columns:1fr; gap:28px}}
+.gauge{position:relative; width:230px; height:230px; flex-shrink:0}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+.gauge .big{font-family:"Fraunces",serif; font-weight:400; font-size:74px; line-height:1;
+  font-variant-numeric:lining-nums tabular-nums; letter-spacing:-.02em}
+.gauge .cap{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--bone-dim); margin-top:8px}
+.verdict .lead{font-family:"Fraunces",serif; font-style:italic; font-weight:300;
+  font-size:clamp(24px,3.4vw,38px); line-height:1.2; letter-spacing:-.01em}
+.verdict .lead .hl{color:var(--accent); font-style:normal; font-weight:400}
+.verdict .sub{color:var(--bone-dim); margin-top:16px; max-width:46ch}
+.verdict .delta{font-family:"JetBrains Mono",monospace; font-size:13px; margin-top:18px;
+  display:inline-flex; gap:8px; align-items:center; padding:6px 12px; border:1px solid var(--hair); border-radius:99px}
+
+/* KPI */
+.kpis{display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--hair); border-left:1px solid var(--hair)}
+@media(max-width:860px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{border-right:1px solid var(--hair); border-bottom:1px solid var(--hair); padding:20px 22px; transition:background .3s}
+.kpi:hover{background:var(--ink2)}
+.kpi .lab{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint)}
+.kpi .val{font-family:"Fraunces",serif; font-weight:400; font-size:42px; line-height:1.05;
+  font-variant-numeric:lining-nums tabular-nums; margin-top:12px; letter-spacing:-.02em}
+.kpi .val .u{font-family:"Instrument Sans",sans-serif; font-size:15px; color:var(--bone-dim); margin-left:3px}
+.kpi .d{font-family:"JetBrains Mono",monospace; font-size:11.5px; margin-top:10px; color:var(--bone-faint)}
+.d .g{color:var(--good)} .d .b{color:var(--alert)} .d .f{color:var(--bone-dim)}
+
+/* FOCUS + RECS */
+.focus{border:1px solid var(--hair); border-left:2px solid var(--accent); border-radius:4px;
+  padding:30px 34px; background:linear-gradient(180deg,rgba(255,210,14,.04),transparent)}
+.focus .tag{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent)}
+.focus h3{font-family:"Fraunces",serif; font-weight:400; font-size:27px; margin:12px 0 10px}
+.focus p{color:var(--bone-dim); max-width:70ch}
+.reclist{margin-top:14px}
+.rec{display:grid; grid-template-columns:34px 1fr; gap:18px; padding:22px 4px; border-bottom:1px solid var(--hair2)}
+.rec:last-child{border-bottom:none}
+.rec .ic{font-size:20px; line-height:1.3}
+.rec .t{font-family:"Fraunces",serif; font-size:18px; display:flex; align-items:center; gap:12px}
+.pill{font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+  padding:3px 8px; border-radius:99px; border:1px solid currentColor}
+.pill.good{color:var(--good)} .pill.warn{color:var(--warn)} .pill.alert{color:var(--alert)}
+.rec .x{color:var(--bone-dim); font-size:14.5px; margin-top:7px; max-width:78ch}
+
+/* CHARTS */
+.charts{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--hair); border:1px solid var(--hair)}
+.charts .full{grid-column:1/-1}
+@media(max-width:820px){.charts{grid-template-columns:1fr}}
+.panel{background:var(--ink); padding:24px 26px}
+.panel .ph{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px}
+.panel h4{font-family:"Fraunces",serif; font-weight:400; font-size:18px}
+.panel .idx{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--bone-faint)}
+.panel .cap{font-size:12.5px; color:var(--bone-faint); margin-bottom:18px; max-width:60ch}
+.box{position:relative; height:200px} .box.tall{height:300px}
+
+/* DAILY */
+.daynav{display:flex; align-items:center; gap:14px; margin-bottom:30px}
+.daynav select{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--bone);
+  background:var(--ink2); border:1px solid var(--hair); border-radius:10px; padding:11px 16px; cursor:pointer; min-width:190px}
+.daynav button{font-family:"JetBrains Mono",monospace; font-size:16px; color:var(--bone-dim);
+  background:var(--ink2); border:1px solid var(--hair); border-radius:10px; width:42px; height:42px; cursor:pointer; transition:.2s}
+.daynav button:hover{color:var(--ink); background:var(--accent)}
+.dhead{display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; margin-bottom:8px}
+.dhead .dd{font-family:"Fraunces",serif; font-size:34px; letter-spacing:-.01em}
+.dhead .dv{font-style:italic; font-family:"Fraunces",serif; color:var(--bone-dim); font-size:18px}
+.dscores{display:flex; gap:10px; margin:18px 0 24px; flex-wrap:wrap}
+.dchip{display:flex; align-items:baseline; gap:8px; border:1px solid var(--hair); border-radius:99px; padding:8px 16px}
+.dchip .l{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--bone-faint)}
+.dchip .n{font-family:"Fraunces",serif; font-size:22px}
+.dchip.good .n{color:var(--good)} .dchip.warn .n{color:var(--warn)} .dchip.alert .n{color:var(--alert)}
+.vitals{display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  border-top:1px solid var(--hair); border-left:1px solid var(--hair); margin-bottom:30px}
+.vital{border-right:1px solid var(--hair); border-bottom:1px solid var(--hair); padding:14px 16px}
+.vital .l{font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--bone-faint)}
+.vital .v{font-family:"Fraunces",serif; font-size:24px; margin-top:6px; font-variant-numeric:tabular-nums}
+.vital .v small{font-family:"Instrument Sans",sans-serif; font-size:12px; color:var(--bone-dim)}
+.highlights{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:4px 0 26px}
+.hcard{border:1px solid var(--hair); border-radius:14px; padding:16px 20px; background:var(--ink2)}
+.hcard.good{border-color:rgba(155,192,138,.45); background:rgba(155,192,138,.06)}
+.hcard.warn{border-color:rgba(227,168,73,.4); background:rgba(227,168,73,.05)}
+.hcard.alert{border-color:rgba(223,122,112,.45); background:rgba(223,122,112,.06)}
+.hcard .hl{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); display:flex; gap:8px; align-items:center}
+.hcard .hv{font-family:"Fraunces",serif; font-size:32px; line-height:1.1; margin:10px 0 5px; font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+.hcard .hv small{font-family:"Instrument Sans",sans-serif; font-size:14px; color:var(--bone-dim)}
+.hcard .hs{font-size:12.5px; color:var(--bone-dim)}
+.vgrp{margin-top:24px}
+.vgrp .vl{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); margin-bottom:11px; display:flex; gap:10px; align-items:center}
+.vgrp .vl::after{content:""; flex:1; height:1px; background:var(--hair2)}
+.cgroup{margin-top:34px}
+.cgroup .gh{font-family:"Fraunces",serif; font-size:20px; margin-bottom:4px; display:flex; align-items:baseline; gap:12px}
+.cgroup .gh .agg{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--bone-faint)}
+.cgrid{display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--hair); border-left:1px solid var(--hair); margin-top:14px}
+@media(max-width:760px){.cgrid{grid-template-columns:1fr}}
+.crow{border-right:1px solid var(--hair); border-bottom:1px solid var(--hair); padding:18px 20px}
+.crow-h{display:flex; justify-content:space-between; align-items:baseline}
+.cname{font-family:"Fraunces",serif; font-size:17px}
+.cscore{font-family:"JetBrains Mono",monospace; font-size:15px; font-weight:500}
+.cscore.good{color:var(--good)} .cscore.warn{color:var(--warn)} .cscore.alert{color:var(--alert)}
+.bar{height:3px; background:var(--hair); border-radius:2px; margin:11px 0 13px; overflow:hidden}
+.bar i{display:block; height:100%; border-radius:2px}
+.bar i.good{background:var(--good)} .bar i.warn{background:var(--warn)} .bar i.alert{background:var(--alert)}
+.crow .what{font-size:13.5px; color:var(--bone-dim)}
+.crow .ctx{font-size:13.5px; margin-top:9px}
+.crow .ctx.good{color:var(--good)} .crow .ctx.warn{color:var(--bone-dim)} .crow .ctx.alert{color:var(--alert)}
+.crow .fix{font-size:13px; margin-top:6px; color:var(--bone); padding-left:12px; border-left:2px solid var(--accent)}
+.crow .fix b,.crow .ctx b{color:var(--bone)}
+
+/* WEEKLY */
+.wcard{border:1px solid var(--hair); border-radius:6px; padding:24px 28px; margin-bottom:14px;
+  transition:.2s; border-left:2px solid var(--hair)}
+.wcard:first-child{border-left-color:var(--accent)}
+.wcard .wh{display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px}
+.wcard h3{font-family:"Fraunces",serif; font-weight:400; font-size:23px}
+.wcard .wr{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--bone-faint)}
+.wavg{display:flex; gap:26px; flex-wrap:wrap; margin:18px 0}
+.wavg .a{font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--bone-faint); text-transform:uppercase; letter-spacing:.1em}
+.wavg .a b{display:block; font-family:"Fraunces",serif; font-size:26px; color:var(--bone); letter-spacing:-.01em;
+  text-transform:none; margin-top:4px; font-variant-numeric:tabular-nums}
+.wbw{display:flex; gap:24px; font-size:13px; color:var(--bone-dim); margin-bottom:12px; flex-wrap:wrap}
+.wbw .up{color:var(--good)} .wbw .dn{color:var(--alert)}
+.wins{display:flex; flex-direction:column; gap:7px}
+.wins .wi{font-size:14px; display:flex; gap:9px; align-items:baseline}
+.wins .dot{width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:6px}
+.dot.good{background:var(--good)} .dot.warn{background:var(--warn)} .dot.alert{background:var(--alert)}
+
+/* GLOSSARY */
+.gentry{border-bottom:1px solid var(--hair2); padding:22px 0; display:grid; grid-template-columns:230px 1fr; gap:30px}
+@media(max-width:680px){.gentry{grid-template-columns:1fr; gap:8px}}
+.gentry .gn{font-family:"Fraunces",serif; font-size:20px}
+.gentry .gd{color:var(--bone-dim); font-size:15px; max-width:72ch}
+.gnote{font-size:13.5px; color:var(--bone-faint); margin-top:22px; font-style:italic}
+
+/* ПЛАН НА ТИЖДЕНЬ */
+.coach-meta{font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--bone-faint); letter-spacing:.02em; margin-bottom:6px}
+.coach-meta b{color:var(--accent)}
+.coach-sum{font-family:"Fraunces",serif; font-style:italic; font-weight:300; font-size:clamp(18px,2.4vw,24px); line-height:1.45; color:var(--bone); max-width:82ch}
+.coach-h{font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); margin:34px 0 14px; display:flex; gap:10px; align-items:center}
+.coach-h::after{content:""; flex:1; height:1px; background:var(--hair2)}
+.pcard{display:grid; grid-template-columns:38px 1fr; gap:16px; border:1px solid var(--hair); border-radius:12px; padding:18px 20px; margin-bottom:10px}
+.pcard .pn{font-family:"Fraunces",serif; font-size:26px; color:var(--accent); line-height:1}
+.pcard .pt{font-family:"Fraunces",serif; font-size:18px; margin-bottom:8px}
+.pcard .pwhy{font-size:13.5px; color:var(--bone-dim); margin-bottom:7px}
+.pcard .phow{font-size:13.5px; color:var(--bone); padding-left:12px; border-left:2px solid var(--accent)}
+.pcard .phow b,.pcard .pwhy b{color:var(--bone)}
+.coach-goal{margin-top:24px; border:1px solid rgba(255,210,14,.4); background:linear-gradient(180deg,rgba(255,210,14,.06),transparent); border-radius:12px; padding:22px 26px}
+.coach-goal .gl{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--accent); margin-bottom:8px}
+.coach-goal .gt{font-family:"Fraunces",serif; font-size:20px; line-height:1.35}
+.coach-empty{color:var(--bone-dim); font-size:15px; max-width:70ch; line-height:1.6}
+
+footer{margin-top:60px; padding-top:24px; border-top:1px solid var(--hair);
+  font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--bone-faint); line-height:1.9}
+footer code{color:var(--accent); background:var(--ink2); padding:2px 7px; border-radius:4px}
+footer .dis{margin-top:10px}
+.reveal{opacity:0; transform:translateY(16px); animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rise{to{opacity:1; transform:none}}
+#loading{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:"JetBrains Mono",monospace; color:var(--bone-faint); font-size:12px; letter-spacing:.2em; z-index:5}
+</style>
+</head>
+<body>
+<div id="loading">ЗАВАНТАЖЕННЯ ДАНИХ…</div>
+<div id="refreshing"><div class="rcard"><div class="spin"></div>
+  <div class="rmsg">Тягну свіжі дані з&nbsp;кільця…</div>
+  <div class="rsub">Зазвичай 5–10 секунд</div></div></div>
+<div id="toast"></div>
+<div class="wrap" id="app" style="display:none">
+  <div class="kicker"><span class="bar"></span> Щотижневий огляд здоров'я · Oura Ring 4</div>
+  <div class="masthead"><h1>Тіло <em>як&nbsp;текст</em></h1></div>
+  <div class="meta" id="meta"></div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-v="overview">Огляд</button>
+    <button class="tab" data-v="daily">Щоденно</button>
+    <button class="tab" data-v="weekly">Потижнево</button>
+    <button class="tab" data-v="coach">План</button>
+    <button class="tab" data-v="glossary">Словник</button>
+    <div class="tabactions">
+      <button class="refresh" id="ttsBtn">🔊 Озвучити</button>
+      <button class="refresh" id="refreshBtn">↻ Оновити з&nbsp;кільця</button>
+    </div>
+  </div>
+
+  <!-- ОГЛЯД -->
+  <section class="view on" id="view-overview">
+    <div class="hero" style="margin-top:40px">
+      <div class="gauge">
+        <svg width="230" height="230" viewBox="0 0 230 230">
+          <circle cx="115" cy="115" r="100" fill="none" stroke="rgba(243,239,230,.08)" stroke-width="2"/>
+          <circle id="arc" cx="115" cy="115" r="100" fill="none" stroke="var(--accent)" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="628" stroke-dashoffset="628"/>
+        </svg>
+        <div class="center"><div class="big" id="heroVal">—</div><div class="cap">Готовність · 7 днів</div></div>
+      </div>
+      <div class="verdict">
+        <div class="lead" id="heroLead"></div>
+        <div class="sub" id="heroSub"></div>
+        <div class="delta" id="heroDelta"></div>
+      </div>
+    </div>
+    <div class="rule"></div>
+    <div class="sect"><span class="no">01</span><h2>Показники тижня</h2><span class="tail"></span></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="sect"><span class="no">02</span><h2>Що робити цього тижня</h2><span class="tail"></span></div>
+    <div class="focus" id="focus"></div>
+    <div class="reclist" id="reclist"></div>
+    <div class="sect"><span class="no">03</span><h2>Тренди</h2><span class="tail"></span></div>
+    <div class="charts">
+      <div class="panel full"><div class="ph"><h4>Три скори в часі</h4><span class="idx">readiness · sleep · activity</span></div>
+        <div class="cap">Дивись на напрямок руху, а не на окремий день. Жовте — готовність.</div><div class="box tall"><canvas id="c_scores"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Сон</h4><span class="idx">год · %</span></div>
+        <div class="cap">Тривалість (стовпці) та ефективність (лінія). Норма ефективності ≥85%.</div><div class="box"><canvas id="c_sleep"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Фази сну</h4><span class="idx">deep · rem · light</span></div>
+        <div class="cap">Глибокий 13–20%, REM ~20–25% від ночі.</div><div class="box"><canvas id="c_phases"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Пульс спокою та HRV</h4><span class="idx">уд/хв · мс</span></div>
+        <div class="cap">Нижчий пульс і вища HRV — краще відновлення.</div><div class="box"><canvas id="c_heart"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Активність</h4><span class="idx">кроки/день</span></div>
+        <div class="cap">Орієнтир для серця й судин — від 7–8 тис.</div><div class="box"><canvas id="c_steps"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Сатурація</h4><span class="idx">SpO₂ · %</span></div>
+        <div class="cap">Норма ≥95%. Поодинокі заниження — артефакт.</div><div class="box"><canvas id="c_spo2"></canvas></div></div>
+      <div class="panel"><div class="ph"><h4>Температура тіла</h4><span class="idx">Δ°C</span></div>
+        <div class="cap">Стрибок &gt;+0,5°C із пульсом — можлива хвороба чи фаза циклу.</div><div class="box"><canvas id="c_temp"></canvas></div></div>
+    </div>
+  </section>
+
+  <!-- ЩОДЕННО -->
+  <section class="view" id="view-daily">
+    <div class="sect"><span class="no">04</span><h2>Щоденні дані</h2><span class="tail"></span></div>
+    <p style="color:var(--bone-dim); max-width:74ch; margin-bottom:24px">Обери день — і побачиш усі складові, що формують твої скори в застосунку Oura, перекладені й розтлумачені: що означає кожен бал і що з ним робити.</p>
+    <div class="daynav">
+      <button id="dPrev">‹</button>
+      <select id="daySel"></select>
+      <button id="dNext">›</button>
+    </div>
+    <div id="dayDetail"></div>
+  </section>
+
+  <!-- ПОТИЖНЕВО -->
+  <section class="view" id="view-weekly">
+    <div class="sect"><span class="no">05</span><h2>Потижнево</h2><span class="tail"></span></div>
+    <p style="color:var(--bone-dim); max-width:74ch; margin-bottom:24px">Кожен тиждень — середні скори, найкращий і найгірший день та короткий висновок. Найновіший тиждень угорі (виділений жовтим).</p>
+    <div id="weekList"></div>
+  </section>
+
+  <!-- ПЛАН НА ТИЖДЕНЬ -->
+  <section class="view" id="view-coach">
+    <div class="sect"><span class="no">06</span><h2>План на тиждень</h2><span class="tail"></span></div>
+    <div id="coachContent"></div>
+  </section>
+
+  <!-- СЛОВНИК -->
+  <section class="view" id="view-glossary">
+    <div class="sect"><span class="no">07</span><h2>Словник метрик</h2><span class="tail"></span></div>
+    <p style="color:var(--bone-dim); max-width:74ch; margin-bottom:6px">Що насправді означає кожен показник Oura — простими словами.</p>
+    <div id="glossary"></div>
+    <div class="gnote">Детальні тлумачення складових кожного скору (глибокий сон, баланс HRV, регулярність тощо) — у вкладці «Щоденно» під кожним днем.</div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="dashboard_data.js"></script>
+<script src="next_week_plan.js"></script>
+<script>
+const PILL = {good:"Добре", warn:"Варто", alert:"Увага"};
+const MON = ["січ","лют","бер","кві","тра","чер","лип","сер","вер","жов","лис","гру"];
+const MONF = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
+const WDF = {пн:"понеділок",вт:"вівторок",ср:"середа",чт:"четвер",пт:"пʼятниця",сб:"субота",нд:"неділя"};
+let B, dayIdx=0, SPK=false, PREP=false, neuralAudio=null, ttsVoice=null, ttsQueue=[], ttsI=0, ttsKeep=null;
+const sev = v => v==null?"warn":(v>=85?"good":(v>=70?"warn":"alert"));
+const fmtDay = iso => {const [y,m,d]=iso.split("-").map(Number); return `${d} ${MON[m-1]} ${y}`;};
+
+function render(data){
+  B=data;
+  document.getElementById("loading").style.display="none";
+  document.getElementById("app").style.display="block";
+  const m=B.meta, S=B.series;
+
+  document.getElementById("meta").innerHTML =
+    `<span><b>${m.date_from}</b> → <b>${m.date_to}</b></span><span>${m.days} днів</span>`+
+    `<span>вік <b>${m.age}</b> · ${m.sex}</span><span>судинний вік <b>${m.vascular_age??"—"}</b></span>`+
+    `<span>резильєнтність: <b>${m.resilience}</b></span><span>тренувань <b>${m.workouts}</b></span>`;
+
+  // hero
+  const hero = B.kpis.find(k=>k.label.startsWith("Готовність")) || B.kpis[0];
+  const v = parseFloat(hero.value);
+  document.getElementById("heroVal").textContent = hero.value;
+  const C=628, off=C-(Math.max(0,Math.min(100,v))/100)*C;
+  setTimeout(()=>{const a=document.getElementById("arc");a.style.transition="stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)";a.style.strokeDashoffset=off;},300);
+  let lead,sub;
+  if(v>=85){lead='Організм <span class="hl">добре відновлений</span>.';sub="Є запас — можеш дозволити собі трохи більше навантаження цього тижня без шкоди для відновлення.";}
+  else if(v>=70){lead='Готовність <span class="hl">нижча за оптимум</span>.';sub="Базовий рівень робочий, але є куди рости. Найсильніший важіль — сон і сталий режим.";}
+  else{lead='Тіло просить <span class="hl">відновлення</span>.';sub="Цей тиждень — про відпочинок: легші тренування, більше сну, менше стимуляторів увечері.";}
+  document.getElementById("heroLead").innerHTML=lead;
+  document.getElementById("heroSub").textContent=sub;
+  const dc=hero.cls==="good"?"g":hero.cls==="bad"?"b":"f";
+  document.getElementById("heroDelta").innerHTML=`<span class="${dc}">${hero.delta}</span> <span style="color:var(--bone-faint)">проти базового рівня</span>`;
+
+  const kp=B.kpis.filter(k=>k!==hero);
+  document.getElementById("kpis").innerHTML=kp.map(k=>{const c=k.cls==="good"?"g":k.cls==="bad"?"b":"f";
+    return `<div class="kpi"><div class="lab">${k.label}</div><div class="val">${k.value}<span class="u">${k.unit||""}</span></div><div class="d"><span class="${c}">${k.delta}</span> vs базовий</div></div>`;}).join("");
+
+  const recs=B.recs.slice(); const f=recs.shift();
+  if(f) document.getElementById("focus").innerHTML=`<div class="tag">Фокус тижня · ${PILL[f.sev]}</div><h3>${f.icon} ${f.title}</h3><p>${f.text}</p>`;
+  document.getElementById("reclist").innerHTML=recs.map(r=>`<div class="rec"><div class="ic">${r.icon}</div><div><div class="t"><span class="pill ${r.sev}">${PILL[r.sev]}</span> ${r.title}</div><div class="x">${r.text}</div></div></div>`).join("");
+
+  document.getElementById("footer").innerHTML=
+    `Згенеровано ${m.generated}. Оновити: <code>python3 oura_export.py</code> → <code>python3 build_dashboard.py</code>.`+
+    `<div class="dis">Інструмент із твоїх власних даних, не медичний діагноз. За тривожних симптомів — до лікаря.</div>`;
+
+  drawCharts(S);
+  setupTabs();
+  setupRefresh();
+  setupTTS();
+  buildDaily();
+  buildWeekly();
+  buildGlossary();
+  buildCoach();
+}
+function uanb(s){ return String(s).replace(/(^|[\s(])([А-Яа-яІіЇїЄєҐґA-Za-z]{1,2})\s+/g,(m,p,w)=>p+w+" "); }
+function buildCoach(){
+  const el=document.getElementById("coachContent"); const P=window.PLAN;
+  if(!P){ el.innerHTML='<div class="coach-empty">План ще не згенеровано. Попроси Claude «онови план на тиждень» — або він зʼявиться сам у понеділок (автоматичний тренер).</div>'; return; }
+  const ic={alert:"🔴",warn:"🟡",good:"🟢"};
+  let h=`<div class="coach-meta">Розбір тижня <b>${P.week_reviewed}</b> → план на <b>${P.next_week}</b> · ${P.by}</div>`;
+  h+=`<div class="coach-h">Що показав тиждень</div><div class="coach-sum">${uanb(P.summary)}</div>`;
+  h+=`<div class="coach-h">Помічені закономірності</div>`;
+  h+=(P.patterns||[]).map(p=>`<div class="rec ${p.sev}"><div class="ic">${ic[p.sev]||"•"}</div><div><div class="t">${uanb(p.title)}</div><div class="x">${uanb(p.text)}</div></div></div>`).join("");
+  h+=`<div class="coach-h">План на наступний тиждень</div>`;
+  h+=(P.plan||[]).map(a=>`<div class="pcard"><div class="pn">${a.n}</div><div><div class="pt">${a.icon||""} ${uanb(a.title)}</div><div class="pwhy"><b>Чому:</b> ${uanb(a.why)}</div><div class="phow"><b>Як:</b> ${uanb(a.how)}</div></div></div>`).join("");
+  h+=`<div class="coach-goal"><div class="gl">🎯 Ціль тижня</div><div class="gt">${uanb(P.goal)}</div></div>`;
+  el.innerHTML=h;
+}
+function narrateCoach(){
+  const P=window.PLAN; if(!P) return ["План на тиждень ще не згенеровано."];
+  const p=["План на тиждень.","Що показав тиждень. "+P.summary,"Закономірності."];
+  (P.patterns||[]).forEach(x=>p.push(x.title+". "+x.text));
+  p.push("План на наступний тиждень.");
+  (P.plan||[]).forEach(a=>p.push(a.title+". Чому: "+a.why+" Як: "+a.how));
+  p.push("Ціль тижня. "+P.goal);
+  return p;
+}
+
+/* ── озвучення (Web Speech API) ── */
+function ttsClean(t){return String(t).replace(/ /g," ").replace(/([0-9])\.([0-9])/g,"$1,$2")
+  .replace(/[•↑↓→✓⚠★↻⏹🔊😴🛏️⏰🔋❤️📉📈🌊🧠🌡️🫁🩸🚶]/gu,"").replace(/\s+/g," ").trim();}
+function dec(x){return String(x).replace(".",",");}
+function unitW(u){return ({" год":" годин"," уд":" ударів на хвилину"," мс":" мілісекунд","/хв":" вдихів на хвилину","%":" відсотків"})[u]|| (u?u:"");}
+function fmtSpeak(iso){const [y,m,d]=iso.split("-").map(Number); return `${d} ${MONF[m-1]} ${y}`;}
+
+function narrateOverview(){
+  const hero=B.kpis.find(k=>k.label.startsWith("Готовність"))||B.kpis[0];
+  const vv=parseFloat(hero.value), p=["Огляд тижня."];
+  p.push(`Готовність за тиждень ${hero.value}.`);
+  p.push(vv>=85?"Організм добре відновлений, є запас для навантаження.":vv>=70?"Готовність нижча за оптимум. Найсильніший важіль — сон і сталий режим.":"Тілу потрібне відновлення.");
+  p.push("Показники тижня.");
+  B.kpis.filter(k=>k!==hero).forEach(k=>p.push(`${k.label.replace(/\s*\(7 дн\)/,"")}: ${k.value}${unitW(k.unit)}.`));
+  p.push("Рекомендації.");
+  B.recs.forEach(r=>p.push(`${r.title}. ${r.text}`));
+  return p;
+}
+function narrateDay(d){
+  const v=d.vitals, s=d.scores, p=[`${WDF[d.wd]||d.wd}, ${fmtSpeak(d.day)}.`, d.verdict];
+  p.push(`Готовність ${s.readiness}. Сон ${s.sleep}.`+(s.activity!=null?` Активність ${s.activity}.`:""));
+  const SUMN={stressful:"Стресовий день.",normal:"Збалансований день за рівнем стресу.",restored:"Відновлений день."};
+  if(v.day_summary && SUMN[v.day_summary]) p.push(SUMN[v.day_summary]);
+  if(v.steps!=null) p.push(`Пройдено ${v.steps} кроків.`);
+  const vit=[];
+  if(v.total_h!=null) vit.push(`тривалість сну ${dec(v.total_h)} годин`);
+  if(v.bedtime) vit.push(`засинання о ${v.bedtime}`);
+  if(v.wake) vit.push(`підйом о ${v.wake}`);
+  if(v.deep_h!=null) vit.push(`глибокий сон ${dec(v.deep_h)} годин`);
+  if(v.rem_h!=null) vit.push(`рем-сон ${dec(v.rem_h)} годин`);
+  if(v.efficiency!=null) vit.push(`ефективність ${v.efficiency} відсотків`);
+  if(v.hrv!=null) vit.push(`варіабельність пульсу ${v.hrv} мілісекунд`);
+  if(v.rhr!=null) vit.push(`пульс спокою ${v.rhr} ударів`);
+  if(v.breath!=null) vit.push(`частота дихання ${dec(v.breath)}`);
+  if(vit.length) p.push("Показники ночі: "+vit.join(", ")+".");
+  d.insights.forEach(i=>p.push(`${i.title}. ${i.text}`));
+  [["sleep","Складові сну"],["readiness","Складові готовності"],["activity","Складові активності"]].forEach(([key,nm])=>{
+    if(!d.sc[key].length) return; p.push(nm+".");
+    d.sc[key].forEach(c=>{const g=B.glossary.contrib[c.k]; if(!g)return;
+      const t=c.v<70?(g.low+" "+g.fix):c.v>=85?g.high:"У межах норми.";
+      p.push(`${g.name}, ${c.v}. ${t}`);});
+  });
+  return p;
+}
+function narrateWeekly(){
+  const p=["Огляд по тижнях."];
+  B.weeks.forEach(w=>{const a=w.avg;
+    p.push(`${w.label}, ${w.range}.`);
+    p.push(`Середня готовність ${a.readiness}, сон ${a.sleep}, активність ${a.activity}.`);
+    w.insight.forEach(i=>p.push(i.text));});
+  return p;
+}
+function narrateGlossary(){
+  const p=["Словник метрик."];
+  B.glossary.metrics.forEach(g=>p.push(`${g.name}. ${g.desc}`));
+  return p;
+}
+function narrateActive(){
+  const v=(document.querySelector(".view.on")||{}).id||"";
+  if(v.endsWith("daily")) return narrateDay(B.days[dayIdx]);
+  if(v.endsWith("weekly")) return narrateWeekly();
+  if(v.endsWith("coach")) return narrateCoach();
+  if(v.endsWith("glossary")) return narrateGlossary();
+  return narrateOverview();
+}
+function ukVoice(){const vs=speechSynthesis.getVoices(); return vs.find(v=>/^uk/i.test(v.lang))||null;}
+function toast(msg){const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove("on"),8000);}
+function updTTS(){const b=document.getElementById("ttsBtn"); if(!b)return;
+  b.textContent= PREP?"⏳ Готую…" : (SPK?"⏹ Зупинити":"🔊 Озвучити");
+  b.classList.toggle("speaking", SPK||PREP);}
+function stopAll(){ if(neuralAudio){try{neuralAudio.pause();}catch(e){} neuralAudio=null;} PREP=false; stopSpeak(); }
+async function neuralSpeak(){
+  const text = narrateActive().map(ttsClean).filter(Boolean).join(" ");
+  PREP=true; updTTS();
+  let r;
+  try{ r = await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})}); }
+  catch(e){ PREP=false; updTTS(); toast("Сервер недоступний — читаю системним голосом."); return speakParts(narrateActive()); }
+  if(r.status===503){ PREP=false; updTTS();
+    toast("Нейронний голос ще не налаштовано (немає ключа). Поки читаю системним голосом — як додати ключ, спитай у чаті."); return speakParts(narrateActive()); }
+  if(!r.ok){ let m=""; try{m=(await r.json()).error||"";}catch(e){} PREP=false; updTTS();
+    toast("Помилка озвучки: "+m+". Читаю системним."); return speakParts(narrateActive()); }
+  const blob = await r.blob();
+  if(!PREP){ return; }            // натиснули «стоп», поки готувалось
+  PREP=false; SPK=true; updTTS();
+  neuralAudio = new Audio(URL.createObjectURL(blob));
+  neuralAudio.onended = ()=>{ SPK=false; neuralAudio=null; updTTS(); };
+  neuralAudio.onerror = ()=>{ SPK=false; neuralAudio=null; updTTS(); };
+  neuralAudio.play();
+}
+function ttsToggle(){
+  if(SPK||PREP){ stopAll(); return; }
+  if(location.protocol==="file:"){ toast("Жива нейронна озвучка працює лише коли відкрито через «Oura — дашборд» (сервер). Читаю системним голосом."); return speakParts(narrateActive()); }
+  neuralSpeak();
+}
+function stopSpeak(){SPK=false; if(ttsKeep){clearInterval(ttsKeep);ttsKeep=null;}
+  try{speechSynthesis.cancel(); speechSynthesis.resume();}catch(e){} updTTS();}
+function speakNext(){
+  if(!SPK) return;
+  if(ttsI>=ttsQueue.length){ SPK=false; if(ttsKeep){clearInterval(ttsKeep);ttsKeep=null;} updTTS(); return; }
+  const u=new SpeechSynthesisUtterance(ttsQueue[ttsI++]);
+  u.lang="uk-UA"; if(ttsVoice)u.voice=ttsVoice; u.rate=1; u.pitch=1;
+  u.onend=()=>speakNext();
+  u.onerror=()=>{ setTimeout(speakNext,120); };   // не застрягати на збоях
+  speechSynthesis.speak(u);
+}
+function speakParts(parts){
+  ttsVoice=ukVoice();
+  if(!ttsVoice) toast("Кращу українську озвучку дасть голос «Леся» чи «Максим»: Системні налаштування → Спеціальні можливості → Усне мовлення → Системний голос → Керувати голосами → Українська.");
+  ttsQueue=parts.map(ttsClean).filter(Boolean); ttsI=0;
+  SPK=true; updTTS();
+  speakNext();                                              // читаємо по реченню (надійніше за масову чергу)
+  if(ttsKeep)clearInterval(ttsKeep);
+  ttsKeep=setInterval(()=>{ if(SPK){try{speechSynthesis.resume();}catch(e){}} else {clearInterval(ttsKeep);ttsKeep=null;} },6000);
+}
+function setupTTS(){
+  document.getElementById("ttsBtn").onclick=ttsToggle;
+  try{speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=()=>{};}catch(e){}
+}
+
+/* ── кнопка «Оновити» ── */
+function setupRefresh(){
+  const btn=document.getElementById("refreshBtn");
+  const ov=document.getElementById("refreshing");
+  btn.onclick=()=>{
+    if(location.protocol==="file:"){
+      ov.querySelector(".rmsg").innerHTML="Відкрий дашборд через файл<br>«Відкрити дашборд» на робочому столі";
+      ov.querySelector(".rsub").textContent="кнопка тягне дані лише із запущеним сервером";
+      ov.querySelector(".spin").style.display="none";
+      ov.classList.add("on");
+      setTimeout(()=>{ov.classList.remove("on"); ov.querySelector(".spin").style.display="";},4500);
+      return;
+    }
+    ov.classList.add("on");
+    fetch("/api/refresh").then(r=>r.json()).then(d=>{
+      if(d.ok){ location.reload(); }
+      else {
+        ov.querySelector(".spin").style.display="none";
+        ov.querySelector(".rmsg").textContent="Не вдалося оновити";
+        ov.querySelector(".rsub").textContent=(d.log||"").slice(-140)||"спробуй ще раз";
+        setTimeout(()=>{ov.classList.remove("on"); ov.querySelector(".spin").style.display="";},5000);
+      }
+    }).catch(()=>{
+      ov.querySelector(".spin").style.display="none";
+      ov.querySelector(".rmsg").textContent="Сервер недоступний";
+      ov.querySelector(".rsub").textContent="відкрий через «Відкрити дашборд»";
+      setTimeout(()=>{ov.classList.remove("on"); ov.querySelector(".spin").style.display="";},4500);
+    });
+  };
+}
+
+/* ── вкладки ── */
+function setupTabs(){
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+    stopAll();
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+    document.getElementById("view-"+t.dataset.v).classList.add("on");
+    window.scrollTo({top:0,behavior:"smooth"});
+  });
+}
+
+/* ── ЩОДЕННО ── */
+function buildDaily(){
+  const sel=document.getElementById("daySel");
+  sel.innerHTML=B.days.map((d,i)=>`<option value="${i}">${d.wd} · ${fmtDay(d.day)}</option>`).join("");
+  sel.onchange=()=>{dayIdx=+sel.value; renderDay();};
+  document.getElementById("dPrev").onclick=()=>{if(dayIdx<B.days.length-1){dayIdx++;sel.value=dayIdx;renderDay();}};
+  document.getElementById("dNext").onclick=()=>{if(dayIdx>0){dayIdx--;sel.value=dayIdx;renderDay();}};
+  renderDay();
+}
+function vital(l,v,u){return v==null?"":`<div class="vital"><div class="l">${l}</div><div class="v">${v}<small>${u||""}</small></div></div>`;}
+function crow(c){
+  const g=B.glossary.contrib[c.k]; if(!g) return ""; const v=c.v, s=sev(v);
+  let ctx;
+  if(v<70) ctx=`<div class="ctx alert"><b>Низький бал.</b> ${g.low}</div><div class="fix"><b>Що зробити:</b> ${g.fix}</div>`;
+  else if(v>=85) ctx=`<div class="ctx good">✓ ${g.high}</div>`;
+  else ctx=`<div class="ctx warn">У межах норми. ${g.high}</div>`;
+  return `<div class="crow"><div class="crow-h"><span class="cname">${g.name}</span><span class="cscore ${s}">${v}</span></div>`+
+    `<div class="bar"><i class="${s}" style="width:${v}%"></i></div><div class="what">${g.what}</div>${ctx}</div>`;
+}
+function cgroup(title, arr, agg){
+  if(!arr.length) return "";
+  return `<div class="cgroup"><div class="gh">${title} ${agg!=null?`<span class="agg">скор ${agg}</span>`:""}</div>`+
+    `<div class="cgrid">${arr.map(crow).join("")}</div></div>`;
+}
+const RESIL={limited:"обмежена",adequate:"достатня",solid:"ґрунтовна",strong:"міцна",exceptional:"виняткова"};
+const STRESS_SUM={stressful:["Стресовий день","alert"],normal:["Збалансований день","warn"],restored:["Відновлений день","good"]};
+function dur(s){ if(s==null) return null; s=Math.round(s/60); const h=Math.floor(s/60), m=s%60; return h?(m?`${h} год ${m} хв`:`${h} год`):`${m} хв`; }
+function km(m){ return m==null?null:(m/1000).toFixed(1).replace(".",",")+" км"; }
+function hcard(label,big,sub,sv){ return `<div class="hcard ${sv||""}"><div class="hl">${label}</div><div class="hv">${big}</div><div class="hs">${sub||""}</div></div>`; }
+function vgrp(title,cells){ cells=cells.filter(Boolean).join(""); return cells?`<div class="vgrp"><div class="vl">${title}</div><div class="vitals">${cells}</div></div>`:""; }
+function renderDay(){
+  stopAll();
+  const d=B.days[dayIdx], v=d.vitals;
+  const chip=(l,val)=>val==null?"":`<div class="dchip ${sev(val)}"><span class="l">${l}</span><span class="n">${val}</span></div>`;
+  let html=`<div class="dhead"><span class="dd">${d.wd}, ${fmtDay(d.day)}</span><span class="dv">${d.verdict}</span></div>`;
+  html+=`<div class="dscores">${chip("Готовність",d.scores.readiness)}${chip("Сон",d.scores.sleep)}${chip("Активність",d.scores.activity)}</div>`;
+
+  // ── хайлайт-зона: Стрес + Кроки + Калорії ──
+  const ss=STRESS_SUM[v.day_summary]||["Дані ще збираються","warn"];
+  const stepsSev=v.steps==null?"":(v.steps>=8000?"good":(v.steps<5000?"warn":""));
+  html+=`<div class="highlights">`+
+    hcard("🧘 Стрес за день", ss[0], `стрес ${dur(v.stress_high)||"0 хв"} · відновлення ${dur(v.recovery_high)||"0 хв"}`, ss[1])+
+    hcard("👟 Кроки", v.steps!=null?v.steps.toLocaleString("uk"):"—", v.walk_m?`екв. ходьби ${km(v.walk_m)}`:"", stepsSev)+
+    hcard("🔥 Активні калорії", v.active_cal!=null?`${v.active_cal}<small> ккал</small>`:"—", v.total_cal?`усього ${v.total_cal} ккал · ціль ${v.target_cal??"—"}`:"")+
+  `</div>`;
+
+  if(d.insights.length){
+    html+=`<div class="wins" style="margin-bottom:8px">`+d.insights.map(i=>`<div class="wi"><span class="dot ${i.sev}"></span><span><b style="font-family:Fraunces,serif">${i.title}.</b> <span style="color:var(--bone-dim)">${i.text}</span></span></div>`).join("")+`</div>`;
+  }
+
+  // ── повний набір показників, згрупований як у Oura ──
+  html+=vgrp("Сон",[
+    vital("Тривалість",v.total_h," год"),vital("Засинання",v.bedtime),vital("Підйом",v.wake),
+    vital("Глибокий",v.deep_h," год"),vital("REM",v.rem_h," год"),vital("Легкий",v.light_h," год"),
+    vital("Ефективність",v.efficiency,"%"),vital("Неспокій",v.restless)]);
+  html+=vgrp("Серце й дихання",[
+    vital("Пульс спокою",v.rhr," уд"),vital("Середній пульс",v.avg_hr!=null?Math.round(v.avg_hr):null," уд"),
+    vital("HRV",v.hrv," мс"),vital("Дихання",v.breath,"/хв"),
+    vital("SpO₂",v.spo2,"%"),vital("Дих. порушення",v.bdi)]);
+  html+=vgrp("Активність",[
+    vital("Кроки",v.steps!=null?v.steps.toLocaleString("uk"):null),vital("Висока активн.",dur(v.high_act)),
+    vital("Середня активн.",dur(v.med_act)),vital("Час сидіння",dur(v.sedentary)),
+    vital("Час спокою",dur(v.resting)),vital("Сповіщень про рух",v.inactivity)]);
+  html+=vgrp("Відновлення й температура",[
+    vital("Темп.",v.temp!=null?(v.temp>0?"+":"")+v.temp:null,"°C"),
+    vital("Тренд темп.",v.temp_trend!=null?(v.temp_trend>0?"+":"")+v.temp_trend:null,"°C"),
+    vital("Судинний вік",v.vascular_age),vital("Резильєнтність",v.resilience?RESIL[v.resilience]||v.resilience:null)]);
+
+  html+=cgroup("Сон",d.sc.sleep,d.scores.sleep)+cgroup("Готовність",d.sc.readiness,d.scores.readiness)+cgroup("Активність",d.sc.activity,d.scores.activity);
+  document.getElementById("dayDetail").innerHTML=html;
+}
+
+/* ── ПОТИЖНЕВО ── */
+function buildWeekly(){
+  document.getElementById("weekList").innerHTML=B.weeks.map(w=>{
+    const a=w.avg;
+    const A=(l,val,u)=>val==null?"":`<div class="a">${l}<b>${val}${u||""}</b></div>`;
+    const bw=`<div class="wbw"><span>★ найкращий: <b>${w.best.wd} ${w.best.day?fmtDay(w.best.day):"—"}</b> <span class="up">${w.best.score??""}</span></span>`+
+      `<span>↓ найскладніший: <b>${w.worst.wd} ${w.worst.day?fmtDay(w.worst.day):"—"}</b> <span class="dn">${w.worst.score??""}</span></span></div>`;
+    const ins=w.insight.map(i=>`<div class="wi"><span class="dot ${i.sev}"></span><span style="color:var(--bone-dim)">${i.text}</span></div>`).join("");
+    return `<div class="wcard"><div class="wh"><h3>${w.label}</h3><span class="wr">${w.range} · ${w.n} днів</span></div>`+
+      `<div class="wavg">${A("Готовність",a.readiness)}${A("Сон",a.sleep)}${A("Активність",a.activity)}${A("Сон,год",a.total_h)}${A("Пульс",a.rhr)}${A("HRV",a.hrv)}</div>`+
+      bw+`<div class="wins">${ins}</div></div>`;
+  }).join("");
+}
+
+/* ── СЛОВНИК ── */
+function buildGlossary(){
+  document.getElementById("glossary").innerHTML=B.glossary.metrics.map(g=>
+    `<div class="gentry"><div class="gn">${g.name}</div><div class="gd">${g.desc}</div></div>`).join("");
+}
+
+/* ── графіки ── */
+function drawCharts(D){
+  const bone="#a39e93", hair="rgba(243,239,230,.07)";
+  Chart.defaults.color=bone; Chart.defaults.font.family="'JetBrains Mono', monospace"; Chart.defaults.font.size=10;
+  const noG={display:false}, G={color:hair,drawBorder:false};
+  const xT={grid:noG,ticks:{maxTicksLimit:7,maxRotation:0,color:"#6c6860"}};
+  const acc="#FFD20E", blue="#7aa7d8", green="#9bc08a", violet="#b39ddb", coral="#df7a70", amber="#e3a849";
+  const opt=ex=>Object.assign({responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{labels:{boxWidth:8,boxHeight:8,usePointStyle:true,font:{family:"JetBrains Mono",size:10},color:bone,padding:16}}}},ex||{});
+  const L=(l,d,c,axis)=>({type:"line",label:l,data:d,borderColor:c,backgroundColor:c,tension:.4,pointRadius:0,borderWidth:1.6,spanGaps:true,yAxisID:axis||"y"});
+  new Chart(c_scores,{data:{labels:D.labels_main,datasets:[Object.assign(L("Готовність",D.ready,acc),{borderWidth:2.4}),L("Сон",D.sleep,blue),L("Активність",D.act,green)]},
+    options:opt({scales:{x:{grid:noG,ticks:{maxTicksLimit:10,maxRotation:0,color:"#6c6860"}},y:{grid:G,min:0,max:100}}})});
+  new Chart(c_sleep,{data:{labels:D.labels_main,datasets:[{type:"bar",label:"Тривалість, год",data:D.total_h,backgroundColor:"rgba(122,167,216,.4)",borderRadius:3,yAxisID:"y"},L("Ефективність, %",D.eff,acc,"y1")]},
+    options:opt({scales:{x:xT,y:{grid:G,position:"left",suggestedMin:4,suggestedMax:10},y1:{grid:noG,position:"right",min:70,max:100}}})});
+  new Chart(c_phases,{type:"bar",data:{labels:D.labels_main,datasets:[{label:"Глибокий",data:D.deep,backgroundColor:"#3f6790",stack:"s"},{label:"REM",data:D.rem,backgroundColor:violet,stack:"s"},{label:"Легкий",data:D.light,backgroundColor:"rgba(243,239,230,.14)",stack:"s"}]},
+    options:opt({scales:{x:Object.assign({stacked:true},xT),y:{stacked:true,grid:G}}})});
+  new Chart(c_heart,{data:{labels:D.labels_main,datasets:[L("Пульс спокою",D.rhr,coral),L("HRV",D.hrv,green,"y1")]},
+    options:opt({scales:{x:xT,y:{grid:G,position:"left"},y1:{grid:noG,position:"right"}}})});
+  new Chart(c_steps,{type:"bar",data:{labels:D.labels_main,datasets:[{label:"Кроки",data:D.steps,backgroundColor:"rgba(155,192,138,.45)",borderRadius:3}]},
+    options:opt({plugins:{legend:{display:false}},scales:{x:xT,y:{grid:G}}})});
+  new Chart(c_spo2,{data:{labels:D.labels_main,datasets:[L("SpO₂",D.spo2,blue)]},options:opt({plugins:{legend:{display:false}},scales:{x:xT,y:{grid:G,min:90,max:100}}})});
+  new Chart(c_temp,{data:{labels:D.labels_main,datasets:[Object.assign(L("Δ°C",D.temp,amber),{fill:true,backgroundColor:"rgba(227,168,73,.12)"})]},
+    options:opt({plugins:{legend:{display:false}},scales:{x:xT,y:{grid:G}}})});
+}
+
+if(window.DASH){render(window.DASH);}
+else{fetch("dashboard_data.json").then(r=>r.json()).then(render)
+  .catch(()=>{document.getElementById("loading").textContent="НЕ ВДАЛОСЯ ЗАВАНТАЖИТИ ДАНІ — ЗАПУСТИ build_dashboard.py";});}
+</script>
+</body>
+</html>
