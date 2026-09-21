@@ -20,6 +20,37 @@ A private, self-hosted dashboard for your **Oura Ring** — all analytics stay o
 
 ---
 
+## Подивитися, як воно виглядає, ще не маючи кільця
+
+У проєкті є генератор вигаданих даних - пів року сну, готовності, активності й циклу.
+Жодного стосунку до реальних людей, зерно фіксоване, тож дані щоразу ті самі.
+
+```bash
+python3 make_demo_data.py
+python3 build_dashboard.py && python3 serve.py
+```
+
+Коли захочеш свої справжні дані, видали теку `data/` і зроби звичайний `python3 oura_export.py`.
+Щоб випадково нічого не затерти, генератор відмовляється працювати, якщо в `data/` уже щось лежить.
+
+## Як це виглядає
+
+| Огляд | Щоденно |
+|---|---|
+| ![Огляд](docs/screenshots/01-oglyad.png) | ![Щоденно](docs/screenshots/02-shchodenno.png) |
+
+| Цикл | План на тиждень |
+|---|---|
+| ![Цикл](docs/screenshots/04-tsykl.png) | ![План](docs/screenshots/05-plan.png) |
+
+| Потижнево | Словник |
+|---|---|
+| ![Потижнево](docs/screenshots/03-potyzhnevo.png) | ![Словник](docs/screenshots/06-slovnyk.png) |
+
+Дані на знімках вигадані - це той самий демо-набір.
+
+---
+
 ## Найшвидший спосіб поставити — одна фраза
 
 Якщо в тебе є [Claude Code](https://claude.ai/download), не треба жодної команди руками.
@@ -45,7 +76,7 @@ A private, self-hosted dashboard for your **Oura Ring** — all analytics stay o
 
 ## 🇺🇦 Налаштування (5 хвилин)
 
-**Потрібно:** Python 3.9+, macOS або Linux.
+**Потрібно:** Mac (macOS). Python 3.9+ уже є в системі.
 
 1. **Залежності:**
    ```bash
@@ -81,7 +112,7 @@ A private, self-hosted dashboard for your **Oura Ring** — all analytics stay o
 
 ## 🇬🇧 Setup (5 minutes)
 
-**Requires:** Python 3.9+, macOS or Linux.
+**Requires:** a Mac (macOS). Tested on macOS only.
 
 1. **Dependencies:** `pip install requests edge-tts`
 2. **Register your Oura app** at https://developer.ouraring.com → *Create New* →

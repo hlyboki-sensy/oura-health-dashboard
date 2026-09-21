@@ -14,11 +14,15 @@
 
 ## Крок 0. Перевір середовище
 
+Проєкт підтримується **тільки на macOS**. Якщо система інша - скажи про це відразу,
+не намагайся обійти, і не обіцяй, що «має запрацювати».
+
 ```bash
+uname -s        # має бути Darwin
 python3 --version
 ```
-Потрібен Python 3.9 або новіший. Якщо Python немає — на macOS підкажи `brew install python3`
-або сторінку python.org; на Linux — пакетний менеджер системи.
+Потрібен Python 3.9 або новіший. Якщо Python немає - підкажи `brew install python3`
+або сторінку python.org.
 
 ## Крок 1. Залежності
 
@@ -31,6 +35,16 @@ python3 -m pip install --user requests edge-tts
 python3 -m venv .venv && ./.venv/bin/pip install requests edge-tts
 ```
 Тоді всі наступні команди запускай через `./.venv/bin/python` замість `python3`.
+
+## Крок 1.5. Запропонуй спершу подивитися демо
+
+Перш ніж вести людину по ключах, скажи, що можна одразу подивитися, як дашборд виглядає,
+на вигаданих даних:
+```bash
+python3 make_demo_data.py && python3 build_dashboard.py && python3 serve.py
+```
+Це допомагає зрозуміти, заради чого наступні кроки. Коли надивилася - видали теку `data/`
+(`rm -rf data`) і переходь до справжніх даних.
 
 ## Крок 2. Свій застосунок Oura (це робить людина, не ти)
 
@@ -55,7 +69,7 @@ python3 -m venv .venv && ./.venv/bin/pip install requests edge-tts
 ```bash
 cp config.example.json config.json && open config.json
 ```
-(на Linux замість `open` — `xdg-open`)
+
 
 Скажи: «Встав свої Client ID і Client Secret замість тексту у лапках, збережи файл
 і напиши мені "готово". Мені їх показувати не треба.»
