@@ -56,8 +56,40 @@ HEARTRATE = "heartrate"
 
 
 def load_config():
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
+    if not os.path.exists(CONFIG_PATH):
+        sys.exit(
+            "Немає файлу config.json — без нього не видно, до якого акаунта Oura підключатися.\n"
+            "Зроби так:\n"
+            "  1) cp config.example.json config.json\n"
+            "  2) візьми Client ID і Client Secret на https://developer.ouraring.com/applications\n"
+            "     (Create New Application, Redirect URI: http://localhost:8765/callback)\n"
+            "  3) встав їх у config.json і запусти цю команду ще раз.\n"
+            "Покроково — у файлі ЯК-ПОСТАВИТИ.md"
+        )
+    try:
+        with open(CONFIG_PATH) as f:
+            cfg = json.load(f)
+    except json.JSONDecodeError as e:
+        sys.exit(
+            f"Файл config.json пошкоджений і не читається ({e}).\n"
+            "Найчастіше це загублена кома або лапка. Можна почати заново:\n"
+            "  cp config.example.json config.json"
+        )
+
+    missing = [k for k in ("client_id", "client_secret") if not cfg.get(k)]
+    if missing:
+        sys.exit(
+            f"У config.json бракує полів: {', '.join(missing)}.\n"
+            "Відкрий файл і встав туди свої ключі з https://developer.ouraring.com/applications"
+        )
+    if any("YOUR_OURA" in str(cfg.get(k, "")) for k in ("client_id", "client_secret")):
+        sys.exit(
+            "У config.json ще стоїть текст-заготовка замість справжніх ключів.\n"
+            "Відкрий файл і заміни YOUR_OURA_CLIENT_ID та YOUR_OURA_CLIENT_SECRET\n"
+            "на свої значення з https://developer.ouraring.com/applications"
+        )
+    cfg.setdefault("redirect_uri", "http://localhost:8765/callback")
+    return cfg
 
 
 # ---------------------------------------------------------------------------
